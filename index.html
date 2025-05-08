@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cook Flowchart</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .node rect {
+      cursor: pointer;
+      fill-opacity: 0.8;
+    }
+    .node text {
+      pointer-events: none;
+      font-size: 12px;
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.3;
+    }
+    .highlighted {
+      stroke: orange !important;
+      stroke-opacity: 0.8 !important;
+    }
+  </style>
+</head>
+<body>
+  <h2>Cook Role Flowchart</h2>
+  <svg id="chart" width="900" height="500"></svg>
+
+  <script>
+    const data = {
+      nodes: [
+        { id: "1112", name: "Cook", group: 2004 },
+        { id: "1113", name: "Chef", group: 2004 },
+        { id: "1114", name: "Griller", group: 2004 },
+        { id: "2-222", name: "All Cooks", group: 2010 },
+        { id: "33", name: "Line Cooks", group: 2020 },
+        { id: "34", name: "Line Chefs", group: 2020 }
+      ],
+      links: [
+        { source: "1112", target: "2-222", value: 1 },
+        { source: "1113", target: "2-222", value: 1 },
+        { source: "1114", target: "2-222", value: 1 },
+        { source: "2-222", target: "33", value: 1 },
+        { source: "2-222", target: "34", value: 1 }
+      ]
+    };
+
+    const svg = d3.select("#chart"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+    const sankey = d3.sankey()
+      .nodeWidth(20)
+      .nodePadding(10)
+      .size([width, height])
+      .nodeSort(null);
+
+    const { nodes, links } = sankey({
+      nodes: data.nodes.map(d => Object.assign({}, d)),
+      links: data.links.map(d => Object.assign({}, d))
+    });
+
+    svg.append("g")
+      .selectAll("path")
+      .data(links)
+      .join("path")
+      .attr("class", "link")
+      .attr("d", d3.sankeyLinkHorizontal())
+      .attr("stroke", "#999")
+      .attr("stroke-width", d => Math.max(1, d.width))
+      .attr("id", d => `link-${d.source.id}-${d.target.id}`);
+
+    const node = svg.append("g")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+    node.append("rect")
+      .attr("height", d => d.y1 - d.y0)
+      .attr("width", sankey.nodeWidth())
+      .attr("fill", d => "#69b3a2")
+      .attr("stroke", "#000")
+      .on("click", highlightPath);
+
+    node.append("text")
+      .attr("x", -6)
+      .attr("y", d => (d.y1 - d.y0) / 2)
+      .attr("dy", "0.35em")
+      .attr("text-anchor", "end")
+      .text(d => d.name)
+      .filter(d => d.x0 < width / 2)
+      .attr("x", 6 + sankey.nodeWidth())
+      .attr("text-anchor", "start");
+
+    function highlightPath(clickedNode) {
+      d3.selectAll(".link").classed("highlighted", false);
+      links.forEach(link => {
+        if (link.source.id === clickedNode.id || link.target.id === clickedNode.id) {
+          d3.select(`#link-${link.source.id}-${link.target.id}`).classed("highlighted", true);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
